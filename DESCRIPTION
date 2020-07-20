@@ -1,0 +1,24 @@
+Package: mfapackage
+Title: Functions for Analyzing Data from the Microplate Feeder Assay
+Version: 0.1
+Authors@R: 
+    person(given = "Joshua",
+           family = "Walters",
+           role = c("aut", "cre"),
+           email = "jwalte5@clemson.edu",
+           comment = c(ORCID = "0000-0002-9977-2128"))
+Description: This package provides the necessary functions for high
+    throughput analysis of microplate feeder assay data. The functions
+    provide a convenient means of extracting read data and ancillary
+    information from XML files while allowing for subsequent calculations
+    of drosophila consumption.
+Imports:
+    abind,
+    lubridate,
+    tidyverse,
+    xml2
+License: TBD
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
