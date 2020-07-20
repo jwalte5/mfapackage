@@ -3,7 +3,9 @@ R package for analyzing microplate feeder assay data
 
 To install this package from GitHub:
 1) Install the "devtools" package and load the library
+Code:
 install.packages("devtools")
+
 library("devtools")
 
 2) Install the package from GitHub using:
