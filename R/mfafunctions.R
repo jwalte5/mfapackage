@@ -554,7 +554,7 @@ consumption_formula = function(vol, plate1, plate2) {
 
 
 #' collate_samples: takes a matrix of consumption values and re-formats
-#' it to give a dataframe in Tidy format containing Line, Sex, Rep, and
+#' it to give a dataframe in Tidy format containing Line, Group, Rep, and
 #' consumption values. Sample replicates are numbered down columns;
 #' e.g. A1, B1, C1, D1 -> 1, 2, 3, 4
 #'
@@ -588,15 +588,18 @@ consumption_formula = function(vol, plate1, plate2) {
 #' con_data = consumption_from_array(abs_reads)
 #'
 #' Output:
-#' Line   Sex  Rep    Cons(ÂµL)
-#' 0000   M    1      0.11549404
-#' 0000   M    2      0.00803428
-#' 0000   M    3      0.08090379
-#' 0000   M    4      0.19400821
-#' 0000   M    5      0.06189788
-#' 0000   M    6      -0.07962333
-#
-collate_samples = function(con_matrix, matrix_type = "cols12", layout_matrix = NULL, ID = "PROJ_LINE_S_ASSY") {
+#' Line   Group   Rep    Cons
+#' 0000   M       1      0.11549404
+#' 0000   M       2      0.00803428
+#' 0000   M       3      0.08090379
+#' 0000   F       1      0.19400821
+#' 0000   G       1      0.06189788
+#' 0000   G       2     -0.07962330
+collate_samples = function(con_matrix,
+                           matrix_type = "cols12",
+                           layout_matrix = NULL,
+                           ID = "PROJ_LINE_S_ASSY") {
+
   if (matrix_type == "cols12") {
     des_matrix = matrix(c("C", "E", "M", "M", "M", "M", "M", "F", "F", "F", "F", "F",
                           "C", "E", "M", "M", "M", "M", "M", "F", "F", "F", "F", "F",
@@ -637,26 +640,33 @@ collate_samples = function(con_matrix, matrix_type = "cols12", layout_matrix = N
     des_matrix = layout_matrix
   }
 
-  # Find locations of male, female, and control wells in design matrix
-  male_loc = des_matrix == "M"
-  female_loc = des_matrix == "F"
-  csb_loc = des_matrix == "C"
-  evap_loc = des_matrix == "E"
+  # Identify unique group identifiers in the design matrix
+  groups = unique(as.vector(des_matrix))
 
-  male_reads = con_matrix[male_loc]
-  female_reads = con_matrix[female_loc]
-  csb_reads = con_matrix[csb_loc]
-  evap_reads = con_matrix[evap_loc]
-
+  # Isolate the line number from the ID argument
   Line = parse_IDs(ID)$Line
 
-  male_df = data.frame(Line = Line,Sex = "M", Rep = seq(1,length(male_reads)), Con = male_reads)
-  female_df = data.frame(Line = Line,Sex = "F", Rep = seq(1,length(female_reads)), Con = female_reads)
+  # Iterate over the groups variable to collate the data
+  ## Iterate over the number of groups
+  for (i in seq(1,length(groups))) {
+    # Generate a logical matric indicating the location of the group
+    loc = des_matrix == groups[i]
 
-  csb_df = data.frame(Line = Line,Sex = "C", Rep = seq(1,length(csb_reads)), Con = csb_reads)
-  evap_df = data.frame(Line = Line,Sex = "E", Rep = seq(1,length(evap_reads)), Con = evap_reads)
+    # Create or grow the dataframe collecting the collated data
+    if (i == 1) {
+      collated_df = data.frame(Line = Line,
+                               Group = groups[i],
+                               Rep = seq(1,length(des_matrix[loc])),
+                               Cons = con_matrix[loc])
+    } else {
+      temp = data.frame(Line = Line,
+                        Group = groups[i],
+                        Rep = seq(1,length(des_matrix[loc])),
+                        Cons = con_matrix[loc])
 
-  collated_df = rbind(male_df, female_df, csb_df, evap_df)
+      collated_df = rbind(collated_df, temp)
+    }
+  }
 
   return(collated_df)
 }
