@@ -3,7 +3,7 @@
 \name{collate_samples}
 \alias{collate_samples}
 \title{collate_samples: takes a matrix of consumption values and re-formats
-it to give a dataframe in Tidy format containing Line, Sex, Rep, and
+it to give a dataframe in Tidy format containing Line, Group, Rep, and
 consumption values. Sample replicates are numbered down columns;
 e.g. A1, B1, C1, D1 -> 1, 2, 3, 4}
 \usage{
@@ -34,7 +34,7 @@ ID A character string containing the sample ID for the plate.}
 }
 \description{
 collate_samples: takes a matrix of consumption values and re-formats
-it to give a dataframe in Tidy format containing Line, Sex, Rep, and
+it to give a dataframe in Tidy format containing Line, Group, Rep, and
 consumption values. Sample replicates are numbered down columns;
 e.g. A1, B1, C1, D1 -> 1, 2, 3, 4
 }
@@ -46,12 +46,12 @@ abs_reads = read_plates(imp_xml)
 con_data = consumption_from_array(abs_reads)
 
 Output:
-Line   Sex  Rep    Cons(Ã‚ÂµL)
-0000   M    1      0.11549404
-0000   M    2      0.00803428
-0000   M    3      0.08090379
-0000   M    4      0.19400821
-0000   M    5      0.06189788
-0000   M    6      -0.07962333
+Line   Group   Rep    Cons
+0000   M       1      0.11549404
+0000   M       2      0.00803428
+0000   M       3      0.08090379
+0000   F       1      0.19400821
+0000   G       1      0.06189788
+0000   G       2     -0.07962330
 }
 \keyword{}
