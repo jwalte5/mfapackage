@@ -120,13 +120,67 @@ import_plates = function(imp_xml) {
 }
 
 
-#' con_time: estimates the consumption time and matches the plate IDs
-#' from internal xml document.
+#' sample_list: generates a simplified sample list containing unique IDs
+#' and optional duration between reads.
 #'
 #'
 #' @param imp_xml An internal xml document imported via xml2::read_xml().
 #'
-#' @keywords consumption time, elaspsed time
+#' calc_duration A logical variable indicating whether to return
+#' estimated consumption duration. Default calc_duration = FALSE.
+#'
+#' @keywords consumption time, elapsed time
+#'
+#' @export
+#'
+#' @examples
+#' imp_xml = xml2::read_xml(xml_doc_path)
+#'
+#' # Get all reads for double checking
+#' all_reads = import_plates(imp_xml)
+#'
+#' print(all_reads)
+#'
+#' Output:
+#' ID                  Project  Line   Sex  Assay   ReadTime
+#' HARD_0000_0_SPEC    HARD     0000   0    SPEC    2020-07-02 11:54:00
+#' HARD_0000_0_SPEC    HARD     0000   0    SPEC    2020-07-03 08:49:00
+#' HARD_TAPE_0_SPEC    HARD     TAPE   0    SPEC    2020-07-02 14:10:00
+#' HARD_TAPE_0_SPEC    HARD     TAPE   0    SPEC    2020-07-03 10:53:00
+#'
+#' # Calculate consumption times from matching IDs
+#' consumption_times = sample_list(imp_xml, calc_duration = TRUE)
+#'
+#' print(consumption_times)
+#'
+#' ID                  Project  Line   Sex  Assay   Duration(hr)
+#' HARD_0000_0_SPEC    HARD     0000   0    SPEC    20.9166666666667
+#' HARD_TAPE_0_SPEC    HARD     TAPE   0    SPEC    20.7166666666667
+#'
+sample_list = function(imp_xml, calc_duration = FALSE) {
+  # Import data from internal xml document
+  all_reads = import_plates(imp_xml)
+
+  # Identify rows with matching sample IDs
+  # Create dataframe to store time calculations for each ID
+  summary.data = data.frame(ID = unique(all_reads$ID))
+
+  if (calc_duration == TRUE) {
+    comp_df = con_time(all_reads, summary.data)
+  } else {
+    comp_df = parse_IDs(summary.data$ID)
+  }
+
+  return(comp_df)
+}
+
+
+#' con_time: estimates the consumption time.
+#'
+#'
+#' @param
+#'
+#' @keywords consumption time, elapsed time
 #'
 #' @export
 #'
@@ -154,33 +208,108 @@ import_plates = function(imp_xml) {
 #' HARD_0000_0_SPEC    HARD     0000   0    SPEC    20.9166666666667
 #' HARD_TAPE_0_SPEC    HARD     TAPE   0    SPEC    20.7166666666667
 #'
-con_time = function(imp_xml) {
-  # Import data from internal xml document
-  all_reads = import_plates(imp_xml)
+con_time = function(all_reads, summary.data) {
+  # Expand the logical vectors to make them pairwise comparisons
+  exp_matr = get_logical_comps(all_reads, summary.data)
 
-  # Identify rows with matching sample IDs
-  # Create dataframe to store time calculations for each ID
-  summary.data = cbind(unique(all_reads$ID),NA)
-  colnames(summary.data) = c("ID", "Duration")
+  # Calculate the time interval for matching IDs in logical matrix
+  for (j in seq(8,ncol(exp_matr))){
+    pairs = exp_matr[,j]
 
+    temp = exp_matr[pairs,]
+
+    temp = arrange(temp, desc(ReadTime))
+
+    temp_time = lubridate::interval(start = temp[2,"ReadTime"], end = temp[1,"ReadTime"])
+
+    temp_duration = lubridate::int_length(temp_time)/3600
+
+    temp_vec = data.frame(exp_matr[min(which(pairs == TRUE)),1:6],
+                          temp_duration)
+
+    temp_vec$ReadNo = paste(exp_matr[pairs,"ReadNo"],collapse = " vs ")
+
+    colnames(temp_vec) = c("ID", "Project", "Line", "Sex", "Assay", "Comparison", "Duration(hr)")
+
+    if (j == 8) {
+      comp_df = temp_vec
+    } else {
+      comp_df = rbind(comp_df, temp_vec)
+    }
+  }
+
+
+  return(comp_df)
+}
+
+
+#' get_logical_comps:
+#'
+#'
+#' @param
+#'
+#' @keywords
+#'
+#' @export
+#'
+#' @examples
+get_logical_comps = function(all_reads, summary.data) {
   # Generate logical matrix showing which rows share the same ID
   indices = sapply(all_reads$ID,function(x) {x == summary.data[,"ID"]})
   colnames(indices) = NULL
   indices = t(indices)
 
-  # Calulcate the time interval for matching IDs in logical matrix
-  for (j in seq(1,ncol(indices))){
-    temp = all_reads[as.logical(indices[,j]),]
-    temp = arrange(temp, desc(ReadTime))
-    rownames(temp) = 1:nrow(temp)
-    temp_time = lubridate::interval(start = temp[2,"ReadTime"], end = temp[1,"ReadTime"])
-    summary.data[j,"Duration"] = lubridate::int_length(temp_time)/3600
+  read_ind = replicate(nrow(indices),0)
+
+  read_ind = as.vector(apply(indices, 2, function(x) { read_ind[x] = seq(1, sum(x))}))
+
+  # Split logical vector into independent vectors each with only
+  # a single value
+  # Iterate over each full logical vector
+  for (i in seq(1,ncol(indices))){
+    vec = indices[,i]
+    init = TRUE
+
+    while (sum(vec) > 0){
+      new_vec = logical(length(vec))
+
+      loc = min(which(vec == TRUE))
+      vec[loc] = FALSE
+      new_vec[loc] = TRUE
+
+      if (init){
+        temp_matr = as.matrix(new_vec)
+        init = FALSE
+      } else {
+        temp_matr = cbind(temp_matr, as.matrix(new_vec))
+      }
+    }
+
+    if (ncol(temp_matr) < 2){
+      temp_pairs = temp_matr
+    } else{
+      pairs = combn(ncol(temp_matr),2)
+      temp_pairs = apply(pairs, 2, function(x) {rowSums(temp_matr[,x])})
+    }
+
+
+    if (i == 1) {
+      exp_matr = as.matrix(temp_pairs)
+    } else {
+      exp_matr = cbind(exp_matr, temp_pairs)
+    }
+
   }
 
-  summary.data = cbind(parse_IDs(summary.data[,1]), summary.data[,2])
-  colnames(summary.data) = c("ID", "Project", "Line", "Sex", "Assay", "Duration(hr)")
-  return(summary.data)
+  exp_matr = sapply(as.data.frame(exp_matr), as.logical)
+
+  all_reads = add_column(all_reads,ReadNo = read_ind, .after = "Assay")
+
+  exp_matr = cbind(all_reads, exp_matr)
+
+  return(exp_matr)
 }
+
 
 
 #' make_1536: re-formats the plates from 384 with 4 sub-areas to 1536
@@ -274,9 +403,9 @@ make_1536 = function(imp_xml,plate_node) {
 #' ...
 #' [8,]
 read_plates = function(imp_xml, cutoff = 1, blank = TRUE) {
-  # Generate consumption dataframe using con_time function and pass
+  # Generate consumption dataframe using sample_list function and pass
   # the sample IDs to the names variable
-  names = con_time(imp_xml)$ID
+  names = sample_list(imp_xml)$ID
 
   ## Find the nodes in the xml document for each sample ID
   # Use sapply to return list of nodes matching IDs in names variable
@@ -417,7 +546,7 @@ get_stats = function(con_list, keep_row_names = TRUE) {
 #' con_data = consumption_from_array(abs_reads)
 #'
 #' Output:
-#' Line   Sex  Rep    Cons(ÂµL)
+#' Line   Sex  Rep    Cons(µL)
 #' 0000   M    1      0.11549404
 #' 0000   M    2      0.00803428
 #' 0000   M    3      0.08090379
@@ -452,7 +581,7 @@ consumption_from_array = function(plate_array, vol = 10, matrix_type = "cols12",
     }
   }
 
-  colnames(data_list) = c("Line", "Sex", "Rep", "Cons(ÂµL)")
+  colnames(data_list) = c("Line", "Sex", "Rep", "Cons(µL)")
 
   return(data_list)
 }
@@ -487,7 +616,7 @@ consumption_from_array = function(plate_array, vol = 10, matrix_type = "cols12",
 #' con_data = consumption_from_array(abs_reads)
 #'
 #' Output:
-#' Line   Sex  Rep    Cons(ÂµL)
+#' Line   Sex  Rep    Cons(?L)
 #' 0000   M    1      0.11549404
 #' 0000   M    2      0.00803428
 #' 0000   M    3      0.08090379
@@ -524,7 +653,7 @@ consumption_from_xml = function(imp_xml, Blank = TRUE, vol = 10, matrix_type = "
     }
   }
 
-  colnames(data_list) = c("Line", "Sex", "Rep", "Cons(ÂµL)")
+  colnames(data_list) = c("Line", "Sex", "Rep", "Cons(µL)")
 
   return(data_list)
 }

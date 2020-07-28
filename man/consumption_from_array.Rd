@@ -38,7 +38,7 @@ abs_reads = read_plates(imp_xml)
 con_data = consumption_from_array(abs_reads)
 
 Output:
-Line   Sex  Rep    Cons(Ã‚ÂµL)
+Line   Sex  Rep    Cons(ÂµL)
 0000   M    1      0.11549404
 0000   M    2      0.00803428
 0000   M    3      0.08090379
