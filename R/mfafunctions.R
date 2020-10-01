@@ -516,11 +516,7 @@ get_stats = function(x, remove_outliers = FALSE) {
     outlier_count = length(x[outlier_loc])
     inlier_count = length(x[!outlier_loc])
     stats = rbind(median(x), mean(x), var(x), sd(x), sd(x)/sqrt(length(x)), sd(x)/mean(x), norm_test$p.value, ttest$p.value, outlier_range, paste0(outlier_count,"/",inlier_count))
-<<<<<<< HEAD
-    rownames(stats) = c("Median", "Mean", "Var", "SD", "SEM", "Coef. of Variation", "Normality (p>0.05)", "t test vs 0", "Outlier Range (1.5IQR)", "Outliers (Out/In)")
-=======
     rownames(stats) = c("Median", "Mean", "Var", "SD", "SEM", "Coef. of Variation", "Normality (p>0.05)", "t test vs 0", "Outlier Range (± 1.5IQR)", "Outliers (Out/In)")
->>>>>>> 0392cae8185bf4674cd8bf5d234f028709473a20
     colnames(stats) = deparse(substitute(x))
   } else if (remove_outliers == TRUE) {
     q = quantile(x)
