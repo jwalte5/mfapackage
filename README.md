@@ -6,6 +6,7 @@ To install this package from GitHub:
 <br/>Code:
 <br/>install.packages("devtools")
 <br/>library("devtools")
+<br/>Note: May require updating R Studio and installing Rtools
 
 2) Install the package from GitHub using:
 <br/>install_github("jwalte5/mfapackage")

@@ -498,21 +498,52 @@ find_wells = function(readings,cutoff = 1.0, bin = TRUE, blank=TRUE) {
 #'
 #' @param con_list A list of consumption values belonging to a single
 #' group for analysis.
+#' remove_outliers A logical variables specifying whether to remove
+#' outliers from the data via IQR.
 #'
 #' @keywords statistics, normality, descriptive
 #'
 #' @export
-get_stats = function(con_list, keep_row_names = TRUE) {
-  norm_test = shapiro.test(con_list)
-  ttest = t.test(con_list, mu = 0, alternative = "two.sided")
-  stats = rbind(median(con_list), mean(con_list), sd(con_list), sd(con_list)/sqrt(length(con_list)), sd(con_list)/mean(con_list), norm_test$p.value, ttest$p.value)
-  if (keep_row_names==TRUE){
-    rownames(stats) = c("Median", "Mean", "SD", "SEM", "Coef. of Variation", "Normality (p>0.05)", "t test vs 0")
-  } else {
-    rownames(stats) = NULL
+get_stats = function(x, remove_outliers = FALSE) {
+  if (remove_outliers == FALSE) {
+    norm_test = shapiro.test(x)
+    ttest = t.test(x, mu = 0, alternative = "two.sided")
+    q = quantile(x)
+    upper = q[4]+1.5*IQR(x)
+    lower = q[2]-1.5*IQR(x)
+    outlier_range = paste0("(",round(lower,3), ")-(", round(upper,3), ")")
+    outlier_loc = x > upper | x < lower
+    outlier_count = length(x[outlier_loc])
+    inlier_count = length(x[!outlier_loc])
+    stats = rbind(median(x), mean(x), var(x), sd(x), sd(x)/sqrt(length(x)), sd(x)/mean(x), norm_test$p.value, ttest$p.value, outlier_range, paste0(outlier_count,"/",inlier_count))
+<<<<<<< HEAD
+    rownames(stats) = c("Median", "Mean", "Var", "SD", "SEM", "Coef. of Variation", "Normality (p>0.05)", "t test vs 0", "Outlier Range (1.5IQR)", "Outliers (Out/In)")
+=======
+    rownames(stats) = c("Median", "Mean", "Var", "SD", "SEM", "Coef. of Variation", "Normality (p>0.05)", "t test vs 0", "Outlier Range (± 1.5IQR)", "Outliers (Out/In)")
+>>>>>>> 0392cae8185bf4674cd8bf5d234f028709473a20
+    colnames(stats) = deparse(substitute(x))
+  } else if (remove_outliers == TRUE) {
+    q = quantile(x)
+    upper = q[4]+1.5*IQR(x)
+    lower = q[2]-1.5*IQR(x)
+    outlier_range = paste0("(",round(lower,3), ")-(", round(upper,3), ")")
+    outlier_loc = x > upper | x < lower
+    outlier_count = length(x[outlier_loc])
+    inlier_count = length(x[!outlier_loc])
+
+    y = x[!outlier_loc]
+
+    norm_test = shapiro.test(y)
+    ttest = t.test(y, mu = 0, alternative = "two.sided")
+    stats = rbind(median(y), mean(y), var(y), sd(y), sd(y)/sqrt(length(y)), sd(y)/mean(y), norm_test$p.value, ttest$p.value, outlier_range, paste0(outlier_count,"/",inlier_count))
+<<<<<<< HEAD
+    rownames(stats) = c("Median", "Mean", "Var", "SD", "SEM", "Coef. of Variation", "Normality (p>0.05)", "t test vs 0", "Outlier Range (? 1.5IQR)", "Outliers (Out/In)")
+=======
+    rownames(stats) = c("Median", "Mean", "Var", "SD", "SEM", "Coef. of Variation", "Normality (p>0.05)", "t test vs 0", "Outlier Range (± 1.5IQR)", "Outliers (Out/In)")
+>>>>>>> 0392cae8185bf4674cd8bf5d234f028709473a20
+    colnames(stats) = deparse(substitute(x))
   }
-  colnames(stats) = deparse(substitute(con_list))
-  return(round(stats,3))
+  return(stats)
 }
 
 
@@ -546,7 +577,7 @@ get_stats = function(con_list, keep_row_names = TRUE) {
 #' con_data = consumption_from_array(abs_reads)
 #'
 #' Output:
-#' Line   Sex  Rep    Cons(µL)
+#' Line   Sex  Rep    Cons(ÂµL)
 #' 0000   M    1      0.11549404
 #' 0000   M    2      0.00803428
 #' 0000   M    3      0.08090379
@@ -581,7 +612,7 @@ consumption_from_array = function(plate_array, vol = 10, matrix_type = "cols12",
     }
   }
 
-  colnames(data_list) = c("Line", "Sex", "Rep", "Cons(µL)")
+  colnames(data_list) = c("Line", "Sex", "Rep", "Cons(ÂµL)")
 
   return(data_list)
 }
@@ -653,7 +684,7 @@ consumption_from_xml = function(imp_xml, Blank = TRUE, vol = 10, matrix_type = "
     }
   }
 
-  colnames(data_list) = c("Line", "Sex", "Rep", "Cons(µL)")
+  colnames(data_list) = c("Line", "Sex", "Rep", "Cons(ÂµL)")
 
   return(data_list)
 }
