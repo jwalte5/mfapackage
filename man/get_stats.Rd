@@ -4,11 +4,13 @@
 \alias{get_stats}
 \title{get_stats: apply a standard set of statistical tests to the data}
 \usage{
-get_stats(con_list, keep_row_names = TRUE)
+get_stats(x, remove_outliers = FALSE)
 }
 \arguments{
 \item{con_list}{A list of consumption values belonging to a single
-group for analysis.}
+group for analysis.
+remove_outliers A logical variables specifying whether to remove
+outliers from the data via IQR.}
 }
 \description{
 get_stats: apply a standard set of statistical tests to the data
