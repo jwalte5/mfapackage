@@ -1,6 +1,6 @@
 Package: mfapackage
 Title: Functions for Analyzing Data from the Microplate Feeder Assay
-Version: 0.3
+Version: 1.0
 Authors@R: 
     person(given = "Joshua",
            family = "Walters",
@@ -17,7 +17,7 @@ Imports:
     lubridate,
     tidyverse,
     xml2
-License: TBD
+License: `use_mit_license()`
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
